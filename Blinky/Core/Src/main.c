@@ -22,6 +22,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#define LOW 0
+#define HIGH 1
+#define DEB_THRESHOLD 10
 
 /* USER CODE END Includes */
 
@@ -40,14 +43,22 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+TIM_HandleTypeDef htim14;
 
 /* USER CODE BEGIN PV */
+/*volatile unsigned short B_STATE=LOW;
+volatile unsigned short LAST_B_STATE=LOW;
+volatile unsigned short L_STATE=LOW;
+volatile unsigned short B_PRESS_CONF=LOW;
+volatile unsigned short B_REL_CONF=LOW;
+volatile unsigned short B_PRESS=LOW;*/
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_TIM14_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -64,7 +75,7 @@ static void MX_GPIO_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+ //uint16_t timer_val;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -85,7 +96,10 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_TIM14_Init();
   /* USER CODE BEGIN 2 */
+  HAL_TIM_Base_Start_IT(&htim14);
+ // timer_val = __HAL_TIM_GET_COUNTER(&htim14);
 
   /* USER CODE END 2 */
 
@@ -96,21 +110,64 @@ int main(void)
  // static unsigned short pin_state = 1;
   //static unsigned short GPIO_PIN_RESET=0;
   //static unsigned short GPIO_PIN_SET=1;
+  	  	// HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin,GPIO_PIN_SET);
+  		 //LAST_B_STATE = HAL_GPIO_ReadPin(Ibutton_GPIO_Port, Ibutton_Pin);
+  		 //L_STATE = HAL_GPIO_ReadPin(LED2_GPIO_Port,LED2_Pin);
+  		 //B_PRESS= HAL_GPIO_ReadPin(Ibutton_GPIO_Port, Ibutton_Pin);
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  /*if (__HAL_TIM_GET_COUNTER(&htim14) - timer_val >= 10000)
+	      {
+		  HAL_GPIO_TogglePin(LED2_GPIO_Port,LED2_Pin);
+	        timer_val = __HAL_TIM_GET_COUNTER(&htim14);
+	      }*/
 	  //pin_state = !pin_state;
 	  // write pin state
 	  // NOTE: You can in turn use HAL_GPIO_TogglePin
 	  //HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, pin_state);
 	  // synchronous delay for 2000 ms
 	  //HAL_Delay(1000);
-	  if(HAL_GPIO_ReadPin(Ibutton_GPIO_Port, Ibutton_Pin)==GPIO_PIN_SET)  //Check if button pressed
-	  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin,GPIO_PIN_RESET);               //If pressed Led Switch On
-	  else
-      HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin,GPIO_PIN_SET);          //Else Led Switch Off
+#if 0
+		 B_STATE = HAL_GPIO_ReadPin(Ibutton_GPIO_Port, Ibutton_Pin);
+			 	  if(B_STATE==LOW)
+			 	  {
+			 		  B_PRESS_CONF++;
+			 		  B_REL_CONF=LOW;
+			 		  if(B_PRESS_CONF >= DEB_THRESHOLD)
+			 		  {
+			 		    B_PRESS=LOW;
+			 		  }
+			 	  }
+			 	  else
+			 	  {
+			 	  	  B_REL_CONF++;
+			 	  	  B_PRESS_CONF=LOW;
+			 	  	  if(B_REL_CONF >= DEB_THRESHOLD)
+			 	  	  {
+			 	  		 B_PRESS=HIGH;
+			 	  	  }
+			 	  }
+
+			 	  if(B_PRESS != LAST_B_STATE)
+			 	  {
+			 		  LAST_B_STATE=B_PRESS;
+			 	  	  if(B_PRESS==LOW)
+			 	  	  {
+			 	  		  L_STATE = (L_STATE==HIGH)?LOW:HIGH;
+			 	  		  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin,L_STATE);
+			 	  	  }
+			 	  }
+#endif
+
+#if 0
+	 // if(HAL_GPIO_ReadPin(Ibutton_GPIO_Port, Ibutton_Pin)==GPIO_PIN_SET)  //Check if button pressed
+	 // HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin,GPIO_PIN_RESET);               //If pressed Led Switch On
+	 // else
+     // HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin,GPIO_PIN_SET);          //Else Led Switch Off
+#endif
   }
   /* USER CODE END 3 */
 }
@@ -155,6 +212,37 @@ void SystemClock_Config(void)
 }
 
 /**
+  * @brief TIM14 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM14_Init(void)
+{
+
+  /* USER CODE BEGIN TIM14_Init 0 */
+
+  /* USER CODE END TIM14_Init 0 */
+
+  /* USER CODE BEGIN TIM14_Init 1 */
+
+  /* USER CODE END TIM14_Init 1 */
+  htim14.Instance = TIM14;
+  htim14.Init.Prescaler = 1599;
+  htim14.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim14.Init.Period = 9999;
+  htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim14.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim14) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM14_Init 2 */
+
+  /* USER CODE END TIM14_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -168,7 +256,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin : Ibutton_Pin */
   GPIO_InitStruct.Pin = Ibutton_Pin;
@@ -186,6 +274,15 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+//callback function
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if(htim == &htim14)
+	{
+		 HAL_GPIO_TogglePin(LED2_GPIO_Port,LED2_Pin);
+	}
+}
+
 
 /* USER CODE END 4 */
 
@@ -219,6 +316,7 @@ void assert_failed(uint8_t *file, uint32_t line)
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }
-#endif /* USE_FULL_ASSERT */
+#endif /* USE_FULL_
+ASSERT */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
